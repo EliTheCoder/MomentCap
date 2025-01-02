@@ -30,22 +30,6 @@ static bool IsVanillaSkin(const char *pName)
 	return false;
 }
 
-int CSkins::CGetPngFile::OnCompletion(int State)
-{
-	State = CGetFile::OnCompletion(State);
-
-	if(State != HTTP_ERROR && State != HTTP_ABORTED && !m_pSkins->LoadSkinPNG(m_Info, m_aDest, m_aDest, m_StorageType))
-	{
-		State = HTTP_ERROR;
-	}
-	return State;
-}
-
-CSkins::CGetPngFile::CGetPngFile(CSkins *pSkins, IStorage *pStorage, const char *pUrl, const char *pDest, int StorageType, CTimeout Timeout, bool LogProgress) :
-	CGetFile(pStorage, pUrl, pDest, StorageType, Timeout, LogProgress), m_pSkins(pSkins)
-{
-}
-
 int CSkins::SkinScan(const char *pName, int IsDir, int DirType, void *pUser)
 {
 	CSkins *pSelf = (CSkins *)pUser;
@@ -328,7 +312,6 @@ void CSkins::Refresh()
 	}
 
 	m_aSkins.clear();
-	m_aDownloadSkins.clear();
 	Storage()->ListDirectory(IStorage::TYPE_ALL, "skins", SkinScan, this);
 	if(!m_aSkins.size())
 	{
@@ -394,32 +377,5 @@ int CSkins::FindImpl(const char *pName)
 	if(str_find(pName, "/") != 0)
 		return -1;
 
-	auto d = ::find_binary(m_aDownloadSkins.all(), pName);
-	if(!d.empty())
-	{
-		if(d.front().m_pTask && d.front().m_pTask->State() == HTTP_DONE)
-		{
-			char aPath[MAX_PATH_LENGTH];
-			str_format(aPath, sizeof(aPath), "downloadedskins/%s.png", d.front().m_aName);
-			Storage()->RenameFile(d.front().m_aPath, aPath, IStorage::TYPE_SAVE);
-			LoadSkin(d.front().m_aName, d.front().m_pTask->m_Info);
-			d.front().m_pTask = nullptr;
-		}
-		if(d.front().m_pTask && (d.front().m_pTask->State() == HTTP_ERROR || d.front().m_pTask->State() == HTTP_ABORTED))
-		{
-			d.front().m_pTask = nullptr;
-		}
-		return -1;
-	}
-
-	CDownloadSkin Skin;
-	str_copy(Skin.m_aName, pName, sizeof(Skin.m_aName));
-
-	char aUrl[256];
-	str_format(aUrl, sizeof(aUrl), "%s%s.png", g_Config.m_ClSkinDownloadUrl, pName);
-	str_format(Skin.m_aPath, sizeof(Skin.m_aPath), "downloadedskins/%s.%d.tmp", pName, pid());
-	Skin.m_pTask = std::make_shared<CGetPngFile>(this, Storage(), aUrl, Skin.m_aPath, IStorage::TYPE_SAVE, CTimeout{0, 0, 0}, false);
-	m_pClient->Engine()->AddJob(Skin.m_pTask);
-	m_aDownloadSkins.add(Skin);
 	return -1;
 }

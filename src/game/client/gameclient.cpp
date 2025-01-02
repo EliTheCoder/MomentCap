@@ -15,7 +15,6 @@
 #include <engine/sound.h>
 #include <engine/storage.h>
 #include <engine/textrender.h>
-#include <engine/updater.h>
 
 #include <game/generated/client_data.h>
 #include <game/generated/client_data7.h>
@@ -133,9 +132,6 @@ void CGameClient::OnConsoleInit()
 	m_pEditor = Kernel()->RequestInterface<IEditor>();
 	m_pFriends = Kernel()->RequestInterface<IFriends>();
 	m_pFoes = Client()->Foes();
-#if defined(CONF_AUTOUPDATE)
-	m_pUpdater = Kernel()->RequestInterface<IUpdater>();
-#endif
 
 	// setup pointers
 	m_pMenuBackground = &::gs_MenuBackground;

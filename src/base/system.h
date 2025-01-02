@@ -177,6 +177,8 @@ enum
 	IOSEEK_END = 2
 };
 
+#define IO_MAX_PATH_LENGTH 512
+
 typedef struct IOINTERNAL *IOHANDLE;
 
 /*
@@ -1286,6 +1288,23 @@ int str_comp_num(const char *a, const char *b, int num);
 		- The strings are treated as zero-terminated strings.
 */
 int str_comp_filenames(const char *a, const char *b);
+
+/*
+       Function: str_startswith_nocase
+               Checks case insensitive whether the string begins with a certain prefix.
+
+       Parameter:
+               str - String to check.
+               prefix - Prefix to look for.
+
+       Returns:
+               A pointer to the string str after the string prefix, or 0 if
+               the string prefix isn't a prefix of the string str.
+
+       Remarks:
+               - The strings are treated as zero-terminated strings.
+*/
+const char *str_startswith_nocase(const char *str, const char *prefix);
 
 /*
 	Function: str_startswith

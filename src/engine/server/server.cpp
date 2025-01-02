@@ -2446,6 +2446,11 @@ int CServer::Run()
 #if defined(CONF_UPNP)
 	m_UPnP.Open(BindAddr);
 #endif
+	if(!m_Http.Init(std::chrono::seconds{2}))
+	{
+		dbg_msg("server", "Failed to initialize the HTTP client.");
+		return -1;
+	}
 
 	m_NetServer.SetCallbacks(NewClientCallback, NewClientNoAuthCallback, ClientRejoinCallback, DelClientCallback, this);
 

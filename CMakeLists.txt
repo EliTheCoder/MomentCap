@@ -1462,6 +1462,7 @@ set_src(ENGINE_INTERFACE GLOB src/engine
   friends.h
   ghost.h
   graphics.h
+  http.h
   input.h
   kernel.h
   keys.h
@@ -1474,7 +1475,6 @@ set_src(ENGINE_INTERFACE GLOB src/engine
   steam.h
   storage.h
   textrender.h
-  updater.h
   uuid.h
   warning.h
 )
@@ -1500,6 +1500,8 @@ set_src(ENGINE_SHARED GLOB src/engine/shared
   filecollection.cpp
   filecollection.h
   global_uuid_manager.cpp
+  http.cpp
+  http.h
   huffman.cpp
   huffman.h
   image_manipulation.cpp
@@ -1541,6 +1543,7 @@ set_src(ENGINE_SHARED GLOB src/engine/shared
   teehistorian_ex.cpp
   teehistorian_ex.h
   teehistorian_ex_chunks.h
+  updater_stub.h
   uuid_manager.cpp
   uuid_manager.h
   video.cpp
@@ -1609,6 +1612,7 @@ set(DEPS ${DEP_JSON} ${DEP_MD5} ${ZLIB_DEP})
 # Libraries
 set(LIBS
   ${CRYPTO_LIBRARIES}
+  ${CURL_LIBRARIES}
   ${WEBSOCKETS_LIBRARIES}
   ${ZLIB_LIBRARIES}
   ${PLATFORM_LIBS}
@@ -1658,8 +1662,6 @@ if(CLIENT)
     ghost.h
     graphics_threaded.cpp
     graphics_threaded.h
-    http.cpp
-    http.h
     input.cpp
     input.h
     keynames.h
@@ -1675,8 +1677,6 @@ if(CLIENT)
     sound.h
     steam.cpp
     text.cpp
-    updater.cpp
-    updater.h
     video.cpp
     video.h
   )
@@ -1807,7 +1807,6 @@ if(CLIENT)
   # Libraries
   set(LIBS_CLIENT
     ${LIBS}
-    ${CURL_LIBRARIES}
     ${FREETYPE_LIBRARIES}
     ${GLEW_LIBRARIES}
     ${PNGLITE_LIBRARIES}
@@ -2603,7 +2602,7 @@ endforeach()
 
 foreach(target ${TARGETS_OWN})
   if((CMAKE_VERSION VERSION_GREATER 3.1 OR CMAKE_VERSION VERSION_EQUAL 3.1) AND NOT TARGET_OS STREQUAL "mac")
-    set_property(TARGET ${target} PROPERTY CXX_STANDARD 11)
+    set_property(TARGET ${target} PROPERTY CXX_STANDARD 17)
     set_property(TARGET ${target} PROPERTY CXX_STANDARD_REQUIRED ON)
   endif()
 

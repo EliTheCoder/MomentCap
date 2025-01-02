@@ -27,6 +27,7 @@
 
 #include "antibot.h"
 #include "authmanager.h"
+#include "engine/shared/http.h"
 #include "name_ban.h"
 
 #if defined(CONF_UPNP)
@@ -206,6 +207,7 @@ public:
 	CFifo m_Fifo;
 #endif
 	CServerBan m_ServerBan;
+	CHttp m_Http;
 
 	IEngineMap *m_pMap;
 

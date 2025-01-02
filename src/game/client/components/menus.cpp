@@ -25,8 +25,6 @@
 #include <game/generated/protocol.h>
 #include <game/version.h>
 
-#include <engine/client/updater.h>
-
 #include <game/client/components/binds.h>
 #include <game/client/components/console.h>
 #include <game/client/components/menu_background.h>
@@ -1102,15 +1100,6 @@ int CMenus::RenderMenubar(CUIRect r)
 		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 
 		bool GotNewsOrUpdate = false;
-
-#if defined(CONF_AUTOUPDATE)
-		int State = Updater()->GetCurrentState();
-		bool NeedUpdate = str_comp(Client()->LatestVersion(), "0");
-		if(State == IUpdater::CLEAN && NeedUpdate)
-		{
-			GotNewsOrUpdate = true;
-		}
-#endif
 
 		GotNewsOrUpdate |= (bool)g_Config.m_UiUnreadNews;
 

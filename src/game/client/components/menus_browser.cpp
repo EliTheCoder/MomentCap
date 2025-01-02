@@ -7,7 +7,6 @@
 #include <engine/serverbrowser.h>
 #include <engine/shared/config.h>
 #include <engine/textrender.h>
-#include <engine/updater.h>
 
 #include <game/generated/client_data.h>
 #include <game/generated/protocol.h>

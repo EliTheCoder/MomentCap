@@ -4,7 +4,7 @@
 #include <engine/keys.h>
 #include <engine/textrender.h>
 
-#include <engine/client/updater.h>
+#include <engine/shared/updater_stub.h>
 #include <engine/shared/config.h>
 
 #include <game/client/components/console.h>
@@ -166,84 +166,6 @@ void CMenus::RenderStartMenu(CUIRect MainView)
 
 	VersionUpdate.VSplitRight(50.0f, &CurVersion, 0);
 	VersionUpdate.VMargin(VMargin, &VersionUpdate);
-
-#if defined(CONF_AUTOUPDATE)
-	char aBuf[64];
-	CUIRect Part;
-	int State = Updater()->GetCurrentState();
-	bool NeedUpdate = str_comp(Client()->LatestVersion(), "0");
-	if(State == IUpdater::CLEAN && NeedUpdate)
-	{
-		str_format(aBuf, sizeof(aBuf), Localize("DDNet %s is out!"), Client()->LatestVersion());
-		TextRender()->TextColor(1.0f, 0.4f, 0.4f, 1.0f);
-	}
-	else if(State == IUpdater::CLEAN)
-	{
-		aBuf[0] = '\0';
-	}
-	else if(State >= IUpdater::GETTING_MANIFEST && State < IUpdater::NEED_RESTART)
-	{
-		char aCurrentFile[64];
-		Updater()->GetCurrentFile(aCurrentFile, sizeof(aCurrentFile));
-		str_format(aBuf, sizeof(aBuf), Localize("Downloading %s:"), aCurrentFile);
-	}
-	else if(State == IUpdater::FAIL)
-	{
-		str_format(aBuf, sizeof(aBuf), Localize("Update failed! Check log..."));
-		TextRender()->TextColor(1.0f, 0.4f, 0.4f, 1.0f);
-	}
-	else if(State == IUpdater::NEED_RESTART)
-	{
-		str_format(aBuf, sizeof(aBuf), Localize("DDNet Client updated!"));
-		TextRender()->TextColor(1.0f, 0.4f, 0.4f, 1.0f);
-	}
-	UI()->DoLabel(&VersionUpdate, aBuf, 14.0f, -1);
-	TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
-
-	VersionUpdate.VSplitLeft(TextRender()->TextWidth(0, 14.0f, aBuf, -1, -1.0f) + 10.0f, 0, &Part);
-
-	if(State == IUpdater::CLEAN && NeedUpdate)
-	{
-		CUIRect Update;
-		Part.VSplitLeft(100.0f, &Update, NULL);
-
-		static int s_VersionUpdate = 0;
-		if(DoButton_Menu(&s_VersionUpdate, Localize("Update now"), 0, &Update, 0, CUI::CORNER_ALL, 5.0f, 0.0f, vec4(0.0f, 0.0f, 0.0f, 0.5f), vec4(0.0f, 0.0f, 0.0f, 0.25f)))
-		{
-			Updater()->InitiateUpdate();
-		}
-	}
-	else if(State == IUpdater::NEED_RESTART)
-	{
-		CUIRect Restart;
-		Part.VSplitLeft(50.0f, &Restart, &Part);
-
-		static int s_VersionUpdate = 0;
-		if(DoButton_Menu(&s_VersionUpdate, Localize("Restart"), 0, &Restart, 0, CUI::CORNER_ALL, 5.0f, 0.0f, vec4(0.0f, 0.0f, 0.0f, 0.5f), vec4(0.0f, 0.0f, 0.0f, 0.25f)))
-		{
-			Client()->Restart();
-		}
-	}
-	else if(State >= IUpdater::GETTING_MANIFEST && State < IUpdater::NEED_RESTART)
-	{
-		CUIRect ProgressBar, Percent;
-		Part.VSplitLeft(100.0f, &ProgressBar, &Percent);
-		ProgressBar.y += 2.0f;
-		ProgressBar.HMargin(1.0f, &ProgressBar);
-		RenderTools()->DrawUIRect(&ProgressBar, vec4(1.0f, 1.0f, 1.0f, 0.25f), CUI::CORNER_ALL, 5.0f);
-		ProgressBar.w = clamp((float)Updater()->GetCurrentPercent(), 10.0f, 100.0f);
-		RenderTools()->DrawUIRect(&ProgressBar, vec4(1.0f, 1.0f, 1.0f, 0.5f), CUI::CORNER_ALL, 5.0f);
-	}
-#elif defined(CONF_INFORM_UPDATE)
-	if(str_comp(Client()->LatestVersion(), "0") != 0)
-	{
-		char aBuf[64];
-		str_format(aBuf, sizeof(aBuf), Localize("DDNet %s is out!"), Client()->LatestVersion());
-		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
-		UI()->DoLabel(&VersionUpdate, aBuf, 14.0f, 0);
-		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
-	}
-#endif
 
 	UI()->DoLabel(&CurVersion, GAME_RELEASE_VERSION, 14.0f, 1);
 
