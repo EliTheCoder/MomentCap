@@ -1,6 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 
+#include "engine/shared/http.h"
 #define _WIN32_WINNT 0x0501
 
 #include <new>
@@ -33,7 +34,6 @@
 #include <engine/storage.h>
 #include <engine/textrender.h>
 
-#include <engine/client/http.h>
 #include <engine/client/notifications.h>
 #include <engine/shared/compression.h>
 #include <engine/shared/config.h>
@@ -311,7 +311,6 @@ CClient::CClient() :
 	// map download
 	m_aMapdownloadFilename[0] = 0;
 	m_aMapdownloadName[0] = 0;
-	m_pMapdownloadTask = NULL;
 	m_MapdownloadFile = 0;
 	m_MapdownloadChunk = 0;
 	m_MapdownloadSha256Present = false;
@@ -326,7 +325,6 @@ CClient::CClient() :
 	m_MapDetailsCrc = 0;
 
 	str_format(m_aDDNetInfoTmp, sizeof(m_aDDNetInfoTmp), DDNET_INFO ".%d.tmp", pid());
-	m_pDDNetInfoTask = NULL;
 	m_aNews[0] = '\0';
 	m_Points = -1;
 
@@ -779,8 +777,6 @@ void CClient::DisconnectWithReason(const char *pReason)
 
 	// disable all downloads
 	m_MapdownloadChunk = 0;
-	if(m_pMapdownloadTask)
-		m_pMapdownloadTask->Abort();
 	if(m_MapdownloadFile)
 		io_close(m_MapdownloadFile);
 	m_MapdownloadFile = 0;
@@ -1733,19 +1729,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 					m_MapdownloadAmount = 0;
 
 					ResetMapDownload();
-
-					if(pMapSha256 && g_Config.m_ClHttpMapDownload)
-					{
-						char aUrl[256];
-						char aEscaped[256];
-						EscapeUrl(aEscaped, sizeof(aEscaped), aFilename);
-						str_format(aUrl, sizeof(aUrl), "%s/%s", g_Config.m_ClMapDownloadUrl, aEscaped);
-
-						m_pMapdownloadTask = std::make_shared<CGetFile>(Storage(), aUrl, m_aMapdownloadFilename, IStorage::TYPE_SAVE, CTimeout{g_Config.m_ClMapDownloadConnectTimeoutMs, g_Config.m_ClMapDownloadLowSpeedLimit, g_Config.m_ClMapDownloadLowSpeedTime});
-						Engine()->AddJob(m_pMapdownloadTask);
-					}
-					else
-						SendMapRequest();
+					SendMapRequest();
 				}
 			}
 		}
@@ -2347,11 +2331,6 @@ void CClient::ProcessServerPacketDummy(CNetChunk *pPacket)
 
 void CClient::ResetMapDownload()
 {
-	if(m_pMapdownloadTask)
-	{
-		m_pMapdownloadTask->Abort();
-		m_pMapdownloadTask = NULL;
-	}
 	m_MapdownloadFile = 0;
 	m_MapdownloadAmount = 0;
 }
@@ -2383,12 +2362,6 @@ void CClient::FinishMapDownload()
 		m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client/network", "loading done");
 		SendReady();
 	}
-	else if(m_pMapdownloadTask) // fallback
-	{
-		ResetMapDownload();
-		m_MapdownloadTotalsize = Prev;
-		SendMapRequest();
-	}
 	else
 	{
 		if(m_MapdownloadFile)
@@ -2403,11 +2376,6 @@ void CClient::FinishMapDownload()
 
 void CClient::ResetDDNetInfo()
 {
-	if(m_pDDNetInfoTask)
-	{
-		m_pDDNetInfoTask->Abort();
-		m_pDDNetInfoTask = NULL;
-	}
 }
 
 bool CClient::IsDDNetInfoChanged()
@@ -2859,38 +2827,6 @@ void CClient::Update()
 	// pump the network
 	PumpNetwork();
 
-	if(m_pMapdownloadTask)
-	{
-		if(m_pMapdownloadTask->State() == HTTP_DONE)
-			FinishMapDownload();
-		else if(m_pMapdownloadTask->State() == HTTP_ERROR)
-		{
-			dbg_msg("webdl", "http failed, falling back to gameserver");
-			ResetMapDownload();
-			SendMapRequest();
-		}
-		else if(m_pMapdownloadTask->State() == HTTP_ABORTED)
-		{
-			m_pMapdownloadTask = NULL;
-		}
-	}
-
-	if(m_pDDNetInfoTask)
-	{
-		if(m_pDDNetInfoTask->State() == HTTP_DONE)
-			FinishDDNetInfo();
-		else if(m_pDDNetInfoTask->State() == HTTP_ERROR)
-		{
-			Storage()->RemoveFile(m_aDDNetInfoTmp, IStorage::TYPE_SAVE);
-			ResetDDNetInfo();
-		}
-		else if(m_pDDNetInfoTask->State() == HTTP_ABORTED)
-		{
-			Storage()->RemoveFile(m_aDDNetInfoTmp, IStorage::TYPE_SAVE);
-			m_pDDNetInfoTask = NULL;
-		}
-	}
-
 	if(State() == IClient::STATE_ONLINE)
 	{
 		if(m_EditJobs.size() > 0)
@@ -2943,9 +2879,6 @@ void CClient::RegisterInterfaces()
 	Kernel()->RegisterInterface(static_cast<IGhostRecorder *>(&m_GhostRecorder), false);
 	Kernel()->RegisterInterface(static_cast<IGhostLoader *>(&m_GhostLoader), false);
 	Kernel()->RegisterInterface(static_cast<IServerBrowser *>(&m_ServerBrowser), false);
-#if defined(CONF_AUTOUPDATE)
-	Kernel()->RegisterInterface(static_cast<IUpdater *>(&m_Updater), false);
-#endif
 	Kernel()->RegisterInterface(static_cast<IFriends *>(&m_Friends), false);
 	Kernel()->ReregisterInterface(static_cast<IFriends *>(&m_Foes));
 }
@@ -2961,21 +2894,12 @@ void CClient::InitInterfaces()
 	m_pInput = Kernel()->RequestInterface<IEngineInput>();
 	m_pMap = Kernel()->RequestInterface<IEngineMap>();
 	m_pMasterServer = Kernel()->RequestInterface<IEngineMasterServer>();
-#if defined(CONF_AUTOUPDATE)
-	m_pUpdater = Kernel()->RequestInterface<IUpdater>();
-#endif
 	m_pSteam = Kernel()->RequestInterface<ISteam>();
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
 
 	m_DemoEditor.Init(m_pGameClient->NetVersion(), &m_SnapshotDelta, m_pConsole, m_pStorage);
 
 	m_ServerBrowser.SetBaseInfo(&m_NetClient[CLIENT_CONTACT], m_pGameClient->NetVersion());
-
-	HttpInit(m_pStorage);
-
-#if defined(CONF_AUTOUPDATE)
-	m_Updater.Init();
-#endif
 
 	m_Friends.Init();
 	m_Foes.Init(true);
@@ -4463,9 +4387,6 @@ void CClient::RequestDDNetInfo()
 		str_append(aUrl, "?name=", sizeof(aUrl));
 		str_append(aUrl, aEscaped, sizeof(aUrl));
 	}
-
-	m_pDDNetInfoTask = std::make_shared<CGetFile>(Storage(), aUrl, m_aDDNetInfoTmp, IStorage::TYPE_SAVE, CTimeout{10000, 500, 10});
-	Engine()->AddJob(m_pDDNetInfoTask);
 }
 
 int CClient::GetPredictionTime()

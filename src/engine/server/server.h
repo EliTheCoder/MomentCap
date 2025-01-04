@@ -27,6 +27,7 @@
 
 #include "antibot.h"
 #include "authmanager.h"
+#include "engine/shared/http.h"
 #include "name_ban.h"
 
 #if defined(CONF_UPNP)
@@ -92,6 +93,7 @@ class CServer : public IServer
 	class IConsole *m_pConsole;
 	class IStorage *m_pStorage;
 	class IEngineAntibot *m_pAntibot;
+	class IRegister *m_pRegister;
 
 #if defined(CONF_UPNP)
 	CUPnP m_UPnP;
@@ -192,6 +194,11 @@ public:
 		std::shared_ptr<CHostLookup> m_pDnsblLookup;
 
 		bool m_Sixup;
+
+		bool IncludedInServerInfo() const
+		{
+			return m_State != STATE_EMPTY;// && !m_DebugDummy;
+		}
 	};
 
 	CClient m_aClients[MAX_CLIENTS];
@@ -206,6 +213,7 @@ public:
 	CFifo m_Fifo;
 #endif
 	CServerBan m_ServerBan;
+	CHttp m_Http;
 
 	IEngineMap *m_pMap;
 
@@ -232,8 +240,9 @@ public:
 
 	enum
 	{
-		SIX = 0,
-		SIXUP,
+		MAP_TYPE_SIX = 0,
+		MAP_TYPE_SIXUP,
+		NUM_MAP_TYPES
 	};
 
 	char m_aCurrentMap[MAX_PATH_LENGTH];
@@ -243,8 +252,6 @@ public:
 	unsigned int m_aCurrentMapSize[2];
 
 	CDemoRecorder m_aDemoRecorder[MAX_CLIENTS + 1];
-	CRegister m_Register;
-	CRegister m_RegSixup;
 	CAuthManager m_AuthManager;
 
 	int m_RconRestrict;
@@ -354,6 +361,7 @@ public:
 	void GetServerInfoSixup(CPacker *pPacker, int Token, bool SendClients);
 	bool RateLimitServerInfoConnless();
 	void SendServerInfoConnless(const NETADDR *pAddr, int Token, int Type);
+	void UpdateRegisterServerInfo();
 	void UpdateServerInfo(bool Resend = false);
 
 	void PumpNetwork(bool PacketWaiting);
@@ -366,7 +374,6 @@ public:
 	void StopRecord(int ClientID);
 	bool IsRecording(int ClientID);
 
-	void InitRegister(CNetServer *pNetServer, IEngineMasterServer *pMasterServer, IConsole *pConsole);
 	int Run();
 
 	static void ConTestingCommands(IConsole::IResult *pResult, void *pUser);

@@ -11,9 +11,7 @@
 #include <engine/client/demoedit.h>
 #include <engine/client/friends.h>
 #include <engine/client/ghost.h>
-#include <engine/client/http.h>
 #include <engine/client/serverbrowser.h>
-#include <engine/client/updater.h>
 #include <engine/editor.h>
 #include <engine/engine.h>
 #include <engine/graphics.h>
@@ -23,6 +21,8 @@
 #include <engine/shared/config.h>
 #include <engine/shared/demo.h>
 #include <engine/shared/fifo.h>
+#include <engine/shared/http.h>
+#include <engine/shared/updater_stub.h>
 #include <engine/shared/network.h>
 #include <engine/sound.h>
 #include <engine/steam.h>
@@ -92,7 +92,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	IEngineMap *m_pMap;
 	IConsole *m_pConsole;
 	IStorage *m_pStorage;
-	IUpdater *m_pUpdater;
 	ISteam *m_pSteam;
 	IEngineMasterServer *m_pMasterServer;
 
@@ -117,7 +116,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	class CGhostRecorder m_GhostRecorder;
 	class CGhostLoader m_GhostLoader;
 	class CServerBrowser m_ServerBrowser;
-	class CUpdater m_Updater;
 	class CFriends m_Friends;
 	class CFriends m_Foes;
 
@@ -173,7 +171,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	char m_aCmdEditMap[MAX_PATH_LENGTH];
 
 	// map download
-	std::shared_ptr<CGetFile> m_pMapdownloadTask;
 	char m_aMapdownloadFilename[256];
 	char m_aMapdownloadName[256];
 	IOHANDLE m_MapdownloadFile;
@@ -190,7 +187,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	SHA256_DIGEST m_MapDetailsSha256;
 
 	char m_aDDNetInfoTmp[64];
-	std::shared_ptr<CGetFile> m_pDDNetInfoTask;
 
 	char m_aDummyNameBuf[16];
 
@@ -275,7 +271,6 @@ public:
 	IGameClient *GameClient() { return m_pGameClient; }
 	IEngineMasterServer *MasterServer() { return m_pMasterServer; }
 	IStorage *Storage() { return m_pStorage; }
-	IUpdater *Updater() { return m_pUpdater; }
 	ISteam *Steam() { return m_pSteam; }
 
 	CClient();
@@ -372,8 +367,8 @@ public:
 	void LoadDDNetInfo();
 
 	virtual const char *MapDownloadName() { return m_aMapdownloadName; }
-	virtual int MapDownloadAmount() { return !m_pMapdownloadTask ? m_MapdownloadAmount : (int)m_pMapdownloadTask->Current(); }
-	virtual int MapDownloadTotalsize() { return !m_pMapdownloadTask ? m_MapdownloadTotalsize : (int)m_pMapdownloadTask->Size(); }
+	virtual int MapDownloadAmount() { return 1; }
+	virtual int MapDownloadTotalsize() { return 1; }
 
 	void PumpNetwork();
 
