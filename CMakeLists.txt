@@ -1434,6 +1434,7 @@ set_src(BASE GLOB_RECURSE src/base
   hash_ctxt.h
   hash_libtomcrypt.c
   hash_openssl.c
+  lock.h
   math.h
   system.c
   system.h
@@ -1467,7 +1468,6 @@ set_src(ENGINE_INTERFACE GLOB src/engine
   kernel.h
   keys.h
   map.h
-  masterserver.h
   message.h
   server.h
   serverbrowser.h
@@ -1510,12 +1510,15 @@ set_src(ENGINE_SHARED GLOB src/engine/shared
   jobs.h
   json.cpp
   json.h
+  jsonwriter.cpp
+  jsonwriter.h
   kernel.cpp
   linereader.cpp
   linereader.h
   map.cpp
   map.h
   masterserver.cpp
+  masterserver.h
   memheap.cpp
   memheap.h
   message.h

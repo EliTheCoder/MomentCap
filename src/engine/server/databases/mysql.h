@@ -4,8 +4,8 @@
 #include <atomic>
 #include <engine/server/databases/connection.h>
 #include <memory>
+#include <base/lock.h>
 
-class CLock;
 namespace sql {
 class Connection;
 class PreparedStatement;
